@@ -1,0 +1,10 @@
+Okey we need to add a the performance creator. 
+Let's start with the 
+The performance creator will have several steps, starting from a youtube song, needs to download
+The performance view will play a given performance. The backtrack will be played and the
+have three possible panels the grid, the score panel (where right now is the settings panel) and the lyrics panel (small horizontal part in the lower part)
+the performance data structure will have tempo and a score and a backing track (optional). 
+Is there any standard json format for scores?
+The score can have either the notes to be played (voice), the lyrics (will be shown in the lower part) and the chords
+
+

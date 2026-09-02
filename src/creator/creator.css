@@ -1,0 +1,198 @@
+.screen {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 20px 80px;
+  color: #e8edf5;
+}
+
+.screen a { color: #2fbfa8; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.topbar h1 {
+  font-size: 15px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  color: #2fbfa8;
+  margin: 0;
+  flex: 1;
+}
+.topbar nav { display: flex; gap: 12px; font-size: 13px; }
+
+.card {
+  background: #12151c;
+  border: 1px solid #222836;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  font-weight: 600;
+  color: #6b7686;
+  text-transform: uppercase;
+}
+
+label.field { display: block; margin-bottom: 12px; font-size: 12px; color: #6b7686; }
+label.field span { display: block; margin-bottom: 5px; }
+
+input[type="text"], textarea, select {
+  width: 100%;
+  box-sizing: border-box;
+  background: #1a1f29;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+  color: #e8edf5;
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 13px;
+}
+textarea { min-height: 130px; resize: vertical; font-family: ui-monospace, monospace; }
+input:focus, textarea:focus, select:focus { outline: 1px solid #2fbfa8; border-color: #2fbfa8; }
+
+button {
+  background: #1a1f29;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+  color: #e8edf5;
+  padding: 8px 13px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: #2fbfa8; }
+button:disabled { opacity: 0.4; cursor: default; }
+button.primary { background: #2fbfa8; border-color: #2fbfa8; color: #08120f; font-weight: 600; }
+button.danger:hover { border-color: #ff5c8a; color: #ff5c8a; }
+button.sm { padding: 4px 8px; font-size: 12px; }
+
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.muted { color: #6b7686; font-size: 12px; }
+.error { color: #ff5c8a; font-size: 12px; margin-top: 8px; }
+
+/* --- editor ------------------------------------------------------------ */
+.editor-top {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 780px) { .editor-top { grid-template-columns: 1fr; } }
+
+.player-holder {
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.player-holder iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+.clock {
+  font-family: ui-monospace, monospace;
+  font-size: 20px;
+  font-weight: 600;
+  min-width: 92px;
+}
+
+.results { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow: auto; }
+.results li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px; border-radius: 8px; border: 1px solid transparent;
+}
+.results li:hover { border-color: #2a3140; background: #161a22; }
+.results .synced { color: #2fbfa8; font-size: 11px; font-weight: 600; }
+
+/* --- line rows --------------------------------------------------------- */
+.lines { display: flex; flex-direction: column; gap: 5px; }
+
+.line {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 8px;
+  align-items: start;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #12151c;
+}
+.line.active { border-color: #2fbfa8; background: #17323a; }
+.line.cursor { border-color: #ffd166; }
+.line.untimed .time { color: #ff5c8a; }
+
+.line .time {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  width: 66px;
+  text-align: right;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 5px 4px;
+}
+.line .time:hover { border-color: #2a3140; }
+
+.line .text { border-color: transparent; background: transparent; }
+.line .text:hover { border-color: #2a3140; }
+
+.line .tools { display: flex; gap: 4px; align-items: center; }
+
+/* --- beat grid --------------------------------------------------------- */
+.beats {
+  grid-column: 3 / 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 5px;
+}
+.bar { display: flex; gap: 2px; }
+
+.tick {
+  width: 40px;
+  height: 24px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: #6b7686;
+  background: #161a22;
+  border: 1px solid #232836;
+  border-radius: 5px;
+}
+/* The downbeat of each measure gets the heavier left edge, so measures read
+   as groups without needing separate bar lines. */
+.tick.downbeat { border-left: 2px solid #3a4456; }
+.tick.filled {
+  background: #17323a;
+  border-color: #2fbfa8;
+  color: #a9f0e4;
+}
+.tick.selected { border-color: #ffd166; color: #ffd166; }
+
+.line .bars {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: #6b7686;
+  min-width: 12px;
+  text-align: center;
+}
+
+.chord-editor {
+  grid-column: 3 / 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: #161a22;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+}
+.chord-editor select { width: auto; padding: 4px 6px; font-size: 12px; }

@@ -1,0 +1,7 @@
+# Prettier is configured for LF, so keep the working tree LF on every platform.
+# Without this, Git's autocrlf checks files out as CRLF and every file fails
+# lint with "Delete ␍" on a fresh clone.
+* text=auto eol=lf
+
+*.png binary
+*.svg text eol=lf
