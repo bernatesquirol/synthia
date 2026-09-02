@@ -1,4 +1,6 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
+import { loadConfig } from "../config";
+import { RemoteStore } from "../performance/remote";
 import * as storage from "../performance/storage";
 import { link } from "../router";
 import type { Performance } from "../performance/types";
@@ -8,6 +10,20 @@ import { SourceStep } from "./SourceStep";
 export function CreatorApp() {
   const [performance, setPerformance] = useState<Performance | null>(null);
   const [savedAt, setSavedAt] = useState<string>("");
+  const [publishState, setPublishState] = useState<string>("");
+  const remote = useMemo(() => new RemoteStore(loadConfig()), []);
+
+  async function publish(doc: Performance) {
+    setPublishState("Publishing…");
+    try {
+      const hash = await remote.publish(doc);
+      setPublishState(`Published ${hash}`);
+    } catch (err) {
+      // Most likely causes: no presign endpoint reachable, the endpoint
+      // refused the key, or crypto.subtle is missing on a plain-HTTP origin.
+      setPublishState(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   // Autosave a moment after edits stop, so a refresh never loses work.
   useEffect(() => {
@@ -53,10 +69,24 @@ export function CreatorApp() {
               </button>
               <span class="grow" />
               <span class="muted">
-                {savedAt ? `Saved ${savedAt}` : "Not saved yet"}
+                {publishState ||
+                  (savedAt ? `Saved ${savedAt}` : "Not saved yet")}
               </span>
               <button onClick={() => storage.downloadJson(performance)}>
                 Export .json
+              </button>
+              <button
+                onClick={() => {
+                  storage.save(performance);
+                  publish(performance);
+                }}
+                title={
+                  remote.enabled
+                    ? "Write a new version to the shared store"
+                    : "No presign endpoint configured; publishing locally only"
+                }
+              >
+                Publish
               </button>
               <button
                 class="primary"

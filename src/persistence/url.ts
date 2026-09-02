@@ -1,29 +1,25 @@
 const DEFAULT_PARAM = "v";
 
-// The app uses a HashRouter, so the active route — and any query params that
-// belong to it — live inside `location.hash` (e.g. `#/flow/wiki?v=abc`), not in
-// `location.search` (which sits before the `#`). These helpers therefore read
-// and write the version param inside the hash, consistent with react-router's
-// own `useSearchParams`. Reads fall back to `location.search` so links produced
-// by the older placement (`?v=…#/flow/wiki`) still resolve.
-
-// Split a hash like `#/flow/wiki?v=abc` into its path and its query params.
-function parseHash(): { path: string; params: URLSearchParams } {
-  const raw = window.location.hash.replace(/^#/, "") || "/";
-  const qIndex = raw.indexOf("?");
-  if (qIndex === -1) return { path: raw, params: new URLSearchParams() };
-  return {
-    path: raw.slice(0, qIndex),
-    params: new URLSearchParams(raw.slice(qIndex + 1)),
-  };
+/**
+ * Read and write the version param.
+ *
+ * Upstream this operated on `location.hash` because that app used a
+ * HashRouter. This one routes on the path and already carries state in the
+ * query string (`/performance?id=...`), so the param lives in
+ * `location.search`. Reads still fall back to the hash so links produced by
+ * the other placement resolve.
+ */
+function hashParams(): URLSearchParams {
+  const raw = window.location.hash.replace(/^#/, "");
+  const q = raw.indexOf("?");
+  return new URLSearchParams(q === -1 ? "" : raw.slice(q + 1));
 }
 
 export function readVersionFromUrl(param = DEFAULT_PARAM): string | null {
   if (typeof window === "undefined") return null;
-  const fromHash = parseHash().params.get(param);
-  if (fromHash) return fromHash;
-  // Legacy placement: `?v=…` before the `#`.
-  return new URLSearchParams(window.location.search).get(param);
+  const fromSearch = new URLSearchParams(window.location.search).get(param);
+  if (fromSearch) return fromSearch;
+  return hashParams().get(param);
 }
 
 export function writeVersionToUrl(
@@ -31,17 +27,8 @@ export function writeVersionToUrl(
   param = DEFAULT_PARAM,
 ): void {
   if (typeof window === "undefined") return;
-  const { path, params } = parseHash();
-  if (hash) params.set(param, hash);
-  else params.delete(param);
-  const qs = params.toString();
-  const newHash = "#" + path + (qs ? "?" + qs : "");
-  // Drop any legacy `?v=` left in location.search so we don't keep two copies.
   const url = new URL(window.location.href);
-  url.searchParams.delete(param);
-  window.history.replaceState(
-    {},
-    "",
-    url.origin + url.pathname + url.search + newHash,
-  );
+  if (hash) url.searchParams.set(param, hash);
+  else url.searchParams.delete(param);
+  window.history.replaceState({}, "", url.toString());
 }

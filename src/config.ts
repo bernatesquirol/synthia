@@ -56,6 +56,21 @@ export const DEFAULT_CONFIG = {
     /** Draw the chamfered touch areas. Toggle at runtime with "h". */
     debugHitArea: false,
   },
+  persistence: {
+    /**
+     * URL of the presign endpoint. Empty keeps everything in localStorage.
+     * Defaults from VITE_PRESIGN_ENDPOINT at build time; override per-visit
+     * with ?persistence.presignEndpoint=...
+     *
+     * The endpoint is expected to authorise the caller itself and to validate
+     * the requested key prefix. Nothing secret is held on the client.
+     */
+    presignEndpoint: import.meta.env.VITE_PRESIGN_ENDPOINT ?? "",
+    /** Bucket key prefix every performance lives under. */
+    prefix: "performances",
+    /** Give up on a presign request after this many milliseconds. */
+    timeoutMs: 10000,
+  },
   audio: {
     /** Synth output level in dB. */
     volume: -8,

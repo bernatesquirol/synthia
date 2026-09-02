@@ -1,4 +1,6 @@
-import { useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
+import { loadConfig } from "../config";
+import { RemoteStore, type CatalogueEntry } from "../performance/remote";
 import * as storage from "../performance/storage";
 import { emptyPerformance, type Performance } from "../performance/types";
 import {
@@ -18,6 +20,20 @@ export function SourceStep({ onOpen }: Props) {
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const saved = useMemo(() => storage.listPerformances(), [revision]);
+
+  const remote = useMemo(() => new RemoteStore(loadConfig()), []);
+  const [published, setPublished] = useState<CatalogueEntry[] | null>(null);
+
+  useEffect(() => {
+    if (!remote.enabled) return;
+    remote
+      .listCatalogue()
+      .then(setPublished)
+      .catch((err) => {
+        console.warn("[creator] could not read the catalogue", err);
+        setPublished([]);
+      });
+  }, [remote, revision]);
 
   async function start() {
     const id = parseYouTubeId(url);
@@ -122,6 +138,45 @@ export function SourceStep({ onOpen }: Props) {
           <input type="file" accept="application/json" onChange={importFile} />
         </label>
       </div>
+
+      {remote.enabled && (
+        <div class="card">
+          <h2>Published</h2>
+          {published === null ? (
+            <p class="muted">Loading…</p>
+          ) : published.length === 0 ? (
+            <p class="muted">Nothing published yet.</p>
+          ) : (
+            <ul class="results">
+              {published.map((entry) => (
+                <li key={entry.id}>
+                  <span class="grow">
+                    {entry.title || entry.id}
+                    {entry.artist ? ` — ${entry.artist}` : ""}
+                  </span>
+                  <span class="muted">{entry.hash}</span>
+                  <button
+                    class="sm"
+                    onClick={async () => {
+                      try {
+                        const doc = await remote.fetch(entry.id);
+                        if (doc) onOpen(doc);
+                        else setError(`"${entry.title}" could not be fetched.`);
+                      } catch (err) {
+                        setError(
+                          err instanceof Error ? err.message : String(err),
+                        );
+                      }
+                    }}
+                  >
+                    Open
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </>
   );
 }

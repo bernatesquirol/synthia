@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { loadConfig } from "../config";
+import { readVersionFromUrl } from "../persistence";
 import { link } from "../router";
+import { RemoteStore } from "../performance/remote";
 import * as storage from "../performance/storage";
 import { chordSymbol } from "../music/chords";
 import {
@@ -21,20 +24,61 @@ import {
  * playing surface will go into.
  */
 export function ViewerApp() {
-  const [performance] = useState<Performance | null>(() => {
-    const id = new URLSearchParams(window.location.search).get("id");
-    return id ? storage.load(id) : storage.loadLatest();
-  });
+  const id = new URLSearchParams(window.location.search).get("id");
+  const version = readVersionFromUrl();
+
+  // Anything already in this browser wins, so authoring keeps working offline
+  // and without a configured endpoint. A ?v= pin always goes to the store,
+  // since localStorage only ever holds the working copy.
+  const [performance, setPerformance] = useState<Performance | null>(() =>
+    version ? null : id ? storage.load(id) : storage.loadLatest(),
+  );
+  const [status, setStatus] = useState(performance ? "" : "loading");
+
+  useEffect(() => {
+    if (performance || !id) {
+      if (!performance) setStatus("missing");
+      return;
+    }
+    let cancelled = false;
+    const remote = new RemoteStore(loadConfig());
+    if (!remote.enabled) {
+      setStatus("missing");
+      return;
+    }
+    remote
+      .fetch(id, version ?? undefined)
+      .then((doc) => {
+        if (cancelled) return;
+        if (doc) setPerformance(doc);
+        else setStatus("missing");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn("[viewer] remote fetch failed", err);
+        setStatus(err instanceof Error ? err.message : String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Resolving once on mount is intended; the id comes from the URL.
+  }, []);
 
   if (!performance) {
     return (
       <div class="screen">
         <Header />
         <div class="card">
-          <p class="muted">
-            No performance found. Build one in the{" "}
-            <a href={link("/performance_creator")}>creator</a> first.
-          </p>
+          {status === "loading" ? (
+            <p class="muted">Loading…</p>
+          ) : status === "missing" ? (
+            <p class="muted">
+              No performance found. Build one in the{" "}
+              <a href={link("/performance_creator")}>creator</a> first.
+            </p>
+          ) : (
+            <p class="error">{status}</p>
+          )}
         </div>
       </div>
     );
