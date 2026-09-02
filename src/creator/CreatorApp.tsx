@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import * as storage from "../performance/storage";
+import { link } from "../router";
 import type { Performance } from "../performance/types";
 import { Editor } from "./Editor";
 import { SourceStep } from "./SourceStep";
@@ -23,9 +24,13 @@ export function CreatorApp() {
       <header class="topbar">
         <h1>PERFORMANCE CREATOR</h1>
         <nav>
-          <a href="/">Instrument</a>
+          <a href={link("/")}>Instrument</a>
           {performance && (
-            <a href={`/performance?id=${encodeURIComponent(performance.id)}`}>
+            <a
+              href={link(
+                `/performance?id=${encodeURIComponent(performance.id)}`,
+              )}
+            >
               Open in performance
             </a>
           )}

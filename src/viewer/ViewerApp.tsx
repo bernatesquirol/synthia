@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { link } from "../router";
 import * as storage from "../performance/storage";
 import { chordSymbol } from "../music/chords";
 import {
@@ -32,7 +33,7 @@ export function ViewerApp() {
         <div class="card">
           <p class="muted">
             No performance found. Build one in the{" "}
-            <a href="/performance_creator">creator</a> first.
+            <a href={link("/performance_creator")}>creator</a> first.
           </p>
         </div>
       </div>
@@ -46,8 +47,8 @@ function Header() {
     <header class="topbar">
       <h1>PERFORMANCE</h1>
       <nav>
-        <a href="/">Instrument</a>
-        <a href="/performance_creator">Creator</a>
+        <a href={link("/")}>Instrument</a>
+        <a href={link("/performance_creator")}>Creator</a>
       </nav>
     </header>
   );
