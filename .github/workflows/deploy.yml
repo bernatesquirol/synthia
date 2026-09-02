@@ -26,7 +26,16 @@ jobs:
           cache: npm
       - run: npm ci
       # Also runs eslint and tsc, so a broken commit fails here.
+      #
+      # Vite inlines VITE_* at build time, so the presign endpoint is baked
+      # into the published bundle and is readable by anyone. It is a
+      # repository *variable*, not a secret, because calling it one would only
+      # be misleading: the endpoint authorises callers itself, and no
+      # credential is meant to reach the client. Leave the variable unset and
+      # the app falls back to localStorage.
       - run: npm run build
+        env:
+          VITE_PRESIGN_ENDPOINT: ${{ vars.VITE_PRESIGN_ENDPOINT }}
       # Requires Pages to be enabled with "GitHub Actions" as the source
       # (Settings -> Pages). Enabling it from here needs read/write workflow
       # permissions, which this repo does not grant.
