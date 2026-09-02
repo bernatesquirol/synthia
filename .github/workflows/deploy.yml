@@ -27,7 +27,11 @@ jobs:
       - run: npm ci
       # Also runs eslint and tsc, so a broken commit fails here.
       - run: npm run build
+      # enablement turns Pages on via the API, so no manual repo setting is
+      # needed for the first deploy.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
