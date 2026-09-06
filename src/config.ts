@@ -66,8 +66,11 @@ export const DEFAULT_CONFIG = {
      * the requested key prefix. Nothing secret is held on the client.
      */
     presignEndpoint: import.meta.env.VITE_PRESIGN_ENDPOINT ?? "",
-    /** Bucket key prefix every performance lives under. */
-    prefix: "performances",
+    /**
+     * Bucket key prefix every performance lives under. The presign endpoint
+     * validates this prefix, so it has to match what the endpoint allows.
+     */
+    prefix: "synthia-game/performances",
     /** Give up on a presign request after this many milliseconds. */
     timeoutMs: 10000,
   },
