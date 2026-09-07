@@ -35,6 +35,27 @@ export interface CatalogueEntry {
   hash: string;
 }
 
+/**
+ * Turn an opaque cross-origin failure into something actionable.
+ *
+ * When a presigned response carries no Access-Control-Allow-Origin, the
+ * browser rejects the fetch with a bare "Failed to fetch" TypeError — and the
+ * devtools network row shows the underlying status, which is often a perfectly
+ * normal 404 for an index.json that does not exist yet. That combination sends
+ * you chasing the wrong thing, so name the likely cause.
+ */
+function explain(err: unknown): Error {
+  if (err instanceof TypeError) {
+    return new Error(
+      "The browser could not read the storage response. This is almost " +
+        "always a missing CORS rule on the bucket: presigned URLs work from " +
+        "curl, but a browser needs Access-Control-Allow-Origin on the " +
+        `response to read it. (underlying: ${err.message})`,
+    );
+  }
+  return err instanceof Error ? err : new Error(String(err));
+}
+
 export class RemoteStore {
   private adapter: StorageAdapter;
   /** Repo pointed at the collection root, used only for the catalogue. */
@@ -72,7 +93,12 @@ export class RemoteStore {
   // ------------------------------------------------------------- catalogue
 
   async listCatalogue(): Promise<CatalogueEntry[]> {
-    const raw = await this.root.loadObject(CATALOGUE);
+    let raw: string | null;
+    try {
+      raw = await this.root.loadObject(CATALOGUE);
+    } catch (err) {
+      throw explain(err);
+    }
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw) as CatalogueEntry[];
@@ -103,22 +129,28 @@ export class RemoteStore {
       updatedAt: new Date().toISOString(),
     };
 
-    const hash = await this.repoFor(doc.id).save(
-      { [SNAPSHOT_FILE]: JSON.stringify(doc) },
-      { label: doc.title || doc.id },
-    );
+    try {
+      const hash = await this.repoFor(doc.id).save(
+        { [SNAPSHOT_FILE]: JSON.stringify(doc) },
+        { label: doc.title || doc.id },
+      );
 
-    const entry: CatalogueEntry = {
-      id: doc.id,
-      title: doc.title,
-      artist: doc.artist,
-      updatedAt: doc.updatedAt,
-      hash,
-    };
-    const others = (await this.listCatalogue()).filter((e) => e.id !== doc.id);
-    await this.writeCatalogue([entry, ...others]);
+      const entry: CatalogueEntry = {
+        id: doc.id,
+        title: doc.title,
+        artist: doc.artist,
+        updatedAt: doc.updatedAt,
+        hash,
+      };
+      const others = (await this.listCatalogue()).filter(
+        (e) => e.id !== doc.id,
+      );
+      await this.writeCatalogue([entry, ...others]);
 
-    return hash;
+      return hash;
+    } catch (err) {
+      throw explain(err);
+    }
   }
 
   // ------------------------------------------------------------------ read
@@ -134,7 +166,12 @@ export class RemoteStore {
     }
     if (!wanted) return null;
 
-    const snapshot = await this.repoFor(id).load(wanted);
+    let snapshot;
+    try {
+      snapshot = await this.repoFor(id).load(wanted);
+    } catch (err) {
+      throw explain(err);
+    }
     const raw = snapshot?.[SNAPSHOT_FILE];
     if (!raw) return null;
     return parsePerformance(JSON.parse(raw));
