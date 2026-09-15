@@ -13,6 +13,9 @@ export interface YouTubePlayer {
   getDuration(): number;
   getPlayerState(): number;
   loadVideoById(videoId: string): void;
+  /** Silences the video without touching the viewer's own volume setting. */
+  mute(): void;
+  unMute(): void;
   destroy(): void;
 }
 

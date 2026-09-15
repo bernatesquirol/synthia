@@ -64,6 +64,21 @@ export class VersionedRepo {
     await this.adapter.removeObject?.(this.projectId, name);
   }
 
+  // Read a raw, non-versioned binary object under the current project prefix.
+  // Null when absent, or when the adapter has no binary support at all.
+  async loadBlob(name: string): Promise<Blob | null> {
+    return this.adapter.getBlob
+      ? this.adapter.getBlob(this.projectId, name)
+      : null;
+  }
+
+  // Write a raw, non-versioned binary object under the current project prefix.
+  async saveBlob(name: string, blob: Blob): Promise<void> {
+    if (!this.adapter.putBlob)
+      throw new Error("putBlob not supported by this adapter");
+    await this.adapter.putBlob(this.projectId, name, blob);
+  }
+
   async remove(hash: string): Promise<void> {
     await this.adapter.remove?.(this.projectId, hash);
   }

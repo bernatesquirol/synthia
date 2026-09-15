@@ -4,10 +4,12 @@ import { readVersionFromUrl } from "../persistence";
 import { link } from "../router";
 import { RemoteStore } from "../performance/remote";
 import * as storage from "../performance/storage";
+import { useBackingTrack } from "../performance/useBackingTrack";
 import { chordSymbol } from "../music/chords";
 import {
   chordAt,
   chordTimeline,
+  displayText,
   formatTime,
   lineIndexAt,
   type Performance,
@@ -103,6 +105,18 @@ function Stage({ performance }: { performance: Performance }) {
   const player = useRef<YouTubePlayer | null>(null);
   const [now, setNow] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  const remote = useMemo(() => new RemoteStore(loadConfig()), []);
+  const backing = useBackingTrack(
+    performance.id,
+    performance.backingTrack,
+    remote,
+  );
+  // Reached through a ref because the clock tick is built once, before the
+  // audio has loaded.
+  const followBacking = useRef(backing.follow);
+  followBacking.current = backing.follow;
 
   const lines = useMemo(
     () => [...performance.lines].sort((a, b) => a.time - b.time),
@@ -128,10 +142,18 @@ function Stage({ performance }: { performance: Performance }) {
         return;
       }
       player.current = p;
+      setReady(true);
       const tick = (ts: number) => {
+        const time = p.getCurrentTime();
+        // Every frame: the backing track is corrected against this clock, so
+        // throttling it here would coarsen the sync.
+        followBacking.current(
+          time,
+          p.getPlayerState() === PLAYER_STATE.playing,
+        );
         if (ts - last > 80) {
           last = ts;
-          setNow(p.getCurrentTime());
+          setNow(time);
         }
         raf = requestAnimationFrame(tick);
       };
@@ -143,9 +165,20 @@ function Stage({ performance }: { performance: Performance }) {
       cancelAnimationFrame(raf);
       player.current?.destroy();
       player.current = null;
+      setReady(false);
       host.replaceChildren();
     };
   }, [performance.youtubeId]);
+
+  // Silence the video only once the track is actually playable, so a backing
+  // track that fails to load leaves the original audio rather than silence.
+  const muteVideo = performance.backingTrack?.muteVideo ?? false;
+  useEffect(() => {
+    const p = player.current;
+    if (!p || !ready) return;
+    if (muteVideo && backing.status === "ready") p.mute();
+    else p.unMute();
+  }, [ready, muteVideo, backing.status]);
 
   const activeIndex = lineIndexAt(lines, now);
   const chord = chordAt(chords, now);
@@ -171,6 +204,18 @@ function Stage({ performance }: { performance: Performance }) {
             </button>
             <span class="clock">{formatTime(now)}</span>
           </div>
+          {performance.backingTrack && (
+            <p
+              class={backing.status === "error" ? "error" : "muted"}
+              style="margin-bottom:0"
+            >
+              {backing.status === "loading"
+                ? "Loading the backing track…"
+                : backing.status === "error"
+                  ? backing.error
+                  : `Backing track: ${performance.backingTrack.filename}`}
+            </p>
+          )}
         </div>
 
         <div class="card">
@@ -197,7 +242,7 @@ function Stage({ performance }: { performance: Performance }) {
             >
               <span class="time">{formatTime(line.time)}</span>
               <span />
-              <span class="grow">{line.text}</span>
+              <span class="grow">{displayText(line)}</span>
               <span class="muted">
                 {line.chords
                   .slice()

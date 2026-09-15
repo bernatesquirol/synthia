@@ -15,6 +15,8 @@ import { parsePerformance, type Performance } from "./types";
  *   performances/catalogue.json           listing: id, title, artist, updatedAt
  *   performances/<perfId>/index.json      VersionMeta[] for that performance
  *   performances/<perfId>/snapshots/<hash>.json
+ *   performances/<perfId>/audio/<hash>.mp3   uploaded backing tracks
+ *   performances/<perfId>/images/<hash>.jpg  uploaded timeline photos
  *
  * Each performance is its own versioned project, so editing one never rewrites
  * another and every song keeps an independent history you can revert to. The
@@ -175,6 +177,44 @@ export class RemoteStore {
     const raw = snapshot?.[SNAPSHOT_FILE];
     if (!raw) return null;
     return parsePerformance(JSON.parse(raw));
+  }
+
+  // ----------------------------------------------------------------- assets
+
+  /**
+   * Upload an attachment's bytes — backing audio, a timeline photo. The key
+   * is content-addressed, so this is idempotent and re-uploading the same
+   * file costs one wasted PUT at most.
+   *
+   * Attachments live outside the snapshot: they are far too large to sit
+   * inside a versioned JSON document, and they are immutable for the same
+   * reason snapshots are, so they need no history of their own.
+   */
+  async putAsset(
+    performanceId: string,
+    key: string,
+    blob: Blob,
+  ): Promise<void> {
+    if (!this.enabled) {
+      throw new Error(
+        "Uploads need a presign endpoint: there is nowhere local to put a " +
+          "file this size. Set persistence.presignEndpoint.",
+      );
+    }
+    try {
+      await this.repoFor(performanceId).saveBlob(key, blob);
+    } catch (err) {
+      throw explain(err);
+    }
+  }
+
+  /** Fetch an attachment's bytes, or null when the object is gone. */
+  async getAsset(performanceId: string, key: string): Promise<Blob | null> {
+    try {
+      return await this.repoFor(performanceId).loadBlob(key);
+    } catch (err) {
+      throw explain(err);
+    }
   }
 
   /** Version history for one performance, newest first. */

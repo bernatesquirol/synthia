@@ -30,8 +30,18 @@ export default defineConfig(({ command }) => ({
   // root so local URLs stay short.
   base: command === "build" ? "/synthia/" : "/",
   plugins: [pagesSpaFallback()],
+  // localStorage is keyed to the origin, port included, so a performance
+  // saved from one port is invisible from another. `strictPort` makes a busy
+  // port an error instead of letting Vite quietly move to 8081 and appear to
+  // have lost the work, and preview shares the port so the built site reads
+  // the same saved performances as the dev server.
   server: {
     port: 8080,
+    strictPort: true,
     open: true,
+  },
+  preview: {
+    port: 8080,
+    strictPort: true,
   },
 }));

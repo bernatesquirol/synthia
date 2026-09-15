@@ -14,5 +14,5 @@ export { LocalStorageAdapter } from "./adapters/localStorage";
 export { CompositeAdapter } from "./adapters/composite";
 export { S3Adapter, HttpPresignClient } from "./adapters/s3";
 export type { PresignOp, PresignClient } from "./adapters/s3";
-export { hashSnapshot } from "./hash";
+export { hashSnapshot, hashBytes } from "./hash";
 export { readVersionFromUrl, writeVersionToUrl } from "./url";

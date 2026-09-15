@@ -176,6 +176,29 @@ export class S3Adapter implements StorageAdapter {
     if (!res.ok) throw new Error(`S3 PUT object ${name} → ${res.status}`);
   }
 
+  async getBlob(projectId: string, name: string): Promise<Blob | null> {
+    const url = await this.opts.presigner.presign(
+      "get",
+      this.objectKey(projectId, name),
+    );
+    const res = await fetch(url);
+    if (res.status === 404 || res.status === 403) return null;
+    if (!res.ok) throw new Error(`S3 GET object ${name} → ${res.status}`);
+    return await res.blob();
+  }
+
+  async putBlob(projectId: string, name: string, blob: Blob): Promise<void> {
+    const url = await this.opts.presigner.presign(
+      "put",
+      this.objectKey(projectId, name),
+    );
+    // No explicit Content-Type header. The browser derives one from the blob,
+    // and the presign endpoint does not sign that header — sending one it had
+    // signed differently would be rejected with a 403.
+    const res = await fetch(url, { method: "PUT", body: blob });
+    if (!res.ok) throw new Error(`S3 PUT object ${name} → ${res.status}`);
+  }
+
   async removeObject(projectId: string, name: string): Promise<void> {
     const url = await this.opts.presigner.presign(
       "delete",

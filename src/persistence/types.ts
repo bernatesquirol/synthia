@@ -28,4 +28,10 @@ export interface StorageAdapter {
   // Delete a raw, non-versioned object under the project prefix (e.g. a single
   // "conversations/<id>.json" thread). No-op if the adapter doesn't support it.
   removeObject?(projectId: string, name: string): Promise<void>;
+  // Read a raw, non-versioned *binary* object under the project prefix (e.g.
+  // an uploaded audio file). Separate from getObject because decoding those
+  // bytes as text would corrupt them. Null if absent.
+  getBlob?(projectId: string, name: string): Promise<Blob | null>;
+  // Write a raw, non-versioned binary object. The counterpart to getBlob.
+  putBlob?(projectId: string, name: string, blob: Blob): Promise<void>;
 }

@@ -5,7 +5,9 @@
   color: #e8edf5;
 }
 
-.screen a { color: #2fbfa8; }
+.screen a {
+  color: #2fbfa8;
+}
 
 .topbar {
   display: flex;
@@ -21,7 +23,11 @@
   margin: 0;
   flex: 1;
 }
-.topbar nav { display: flex; gap: 12px; font-size: 13px; }
+.topbar nav {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+}
 
 .card {
   background: #12151c;
@@ -39,10 +45,20 @@
   text-transform: uppercase;
 }
 
-label.field { display: block; margin-bottom: 12px; font-size: 12px; color: #6b7686; }
-label.field span { display: block; margin-bottom: 5px; }
+label.field {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #6b7686;
+}
+label.field span {
+  display: block;
+  margin-bottom: 5px;
+}
 
-input[type="text"], textarea, select {
+input[type="text"],
+textarea,
+select {
   width: 100%;
   box-sizing: border-box;
   background: #1a1f29;
@@ -53,8 +69,17 @@ input[type="text"], textarea, select {
   font: inherit;
   font-size: 13px;
 }
-textarea { min-height: 130px; resize: vertical; font-family: ui-monospace, monospace; }
-input:focus, textarea:focus, select:focus { outline: 1px solid #2fbfa8; border-color: #2fbfa8; }
+textarea {
+  min-height: 130px;
+  resize: vertical;
+  font-family: ui-monospace, monospace;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 1px solid #2fbfa8;
+  border-color: #2fbfa8;
+}
 
 button {
   background: #1a1f29;
@@ -66,16 +91,80 @@ button {
   font-size: 13px;
   cursor: pointer;
 }
-button:hover:not(:disabled) { border-color: #2fbfa8; }
-button:disabled { opacity: 0.4; cursor: default; }
-button.primary { background: #2fbfa8; border-color: #2fbfa8; color: #08120f; font-weight: 600; }
-button.danger:hover { border-color: #ff5c8a; color: #ff5c8a; }
-button.sm { padding: 4px 8px; font-size: 12px; }
+button:hover:not(:disabled) {
+  border-color: #2fbfa8;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+button.primary {
+  background: #2fbfa8;
+  border-color: #2fbfa8;
+  color: #08120f;
+  font-weight: 600;
+}
+button.danger:hover {
+  border-color: #ff5c8a;
+  color: #ff5c8a;
+}
+button.sm {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+/* On/off rather than press-to-act: lit when the source is audible. */
+button.toggle.on {
+  border-color: #2fbfa8;
+  color: #a9f0e4;
+  background: #14262b;
+}
 
-.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.grow { flex: 1; min-width: 0; }
-.muted { color: #6b7686; font-size: 12px; }
-.error { color: #ff5c8a; font-size: 12px; margin-top: 8px; }
+/* A card that folds away. The marker is drawn by the summary itself so the
+   heading can keep the same weight as every other card's. */
+details.fold > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+details.fold > summary::-webkit-details-marker {
+  display: none;
+}
+details.fold > summary::before {
+  content: "▸";
+  color: #6b7686;
+  font-size: 11px;
+}
+details.fold[open] > summary::before {
+  content: "▾";
+}
+details.fold > summary h2 {
+  margin: 0;
+}
+details.fold[open] > summary {
+  margin-bottom: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+.muted {
+  color: #6b7686;
+  font-size: 12px;
+}
+.error {
+  color: #ff5c8a;
+  font-size: 12px;
+  margin-top: 8px;
+}
 
 /* --- editor ------------------------------------------------------------ */
 .editor-top {
@@ -84,7 +173,11 @@ button.sm { padding: 4px 8px; font-size: 12px; }
   gap: 16px;
   align-items: start;
 }
-@media (max-width: 780px) { .editor-top { grid-template-columns: 1fr; } }
+@media (max-width: 780px) {
+  .editor-top {
+    grid-template-columns: 1fr;
+  }
+}
 
 .player-holder {
   aspect-ratio: 16 / 9;
@@ -92,7 +185,12 @@ button.sm { padding: 4px 8px; font-size: 12px; }
   border-radius: 10px;
   overflow: hidden;
 }
-.player-holder iframe { width: 100%; height: 100%; border: 0; display: block; }
+.player-holder iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
 
 .clock {
   font-family: ui-monospace, monospace;
@@ -101,16 +199,66 @@ button.sm { padding: 4px 8px; font-size: 12px; }
   min-width: 92px;
 }
 
-.results { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow: auto; }
-.results li {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px; border-radius: 8px; border: 1px solid transparent;
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow: auto;
 }
-.results li:hover { border-color: #2a3140; background: #161a22; }
-.results .synced { color: #2fbfa8; font-size: 11px; font-weight: 600; }
+.results li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+.results li:hover {
+  border-color: #2a3140;
+  background: #161a22;
+}
+/* One performance in the list: its name, and under it where its copies are. */
+.entry {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.entry-title {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+.entry .ok,
+.entry .warn,
+.entry .error,
+.entry .muted {
+  margin: 0;
+}
+.mono {
+  font-family: ui-monospace, monospace;
+}
+
+.results .synced {
+  color: #2fbfa8;
+  font-size: 11px;
+  font-weight: 600;
+}
 
 /* --- line rows --------------------------------------------------------- */
-.lines { display: flex; flex-direction: column; gap: 5px; }
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  /* A song is a hundred lines; the card cannot be a hundred lines tall. The
+     row being sung scrolls itself into view, see LineRow. */
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
 
 .line {
   display: grid;
@@ -122,9 +270,16 @@ button.sm { padding: 4px 8px; font-size: 12px; }
   border: 1px solid transparent;
   background: #12151c;
 }
-.line.active { border-color: #2fbfa8; background: #17323a; }
-.line.cursor { border-color: #ffd166; }
-.line.untimed .time { color: #ff5c8a; }
+.line.active {
+  border-color: #2fbfa8;
+  background: #17323a;
+}
+.line.cursor {
+  border-color: #ffd166;
+}
+.line.untimed .time {
+  color: #ff5c8a;
+}
 
 .line .time {
   font-family: ui-monospace, monospace;
@@ -135,64 +290,462 @@ button.sm { padding: 4px 8px; font-size: 12px; }
   border: 1px solid transparent;
   padding: 5px 4px;
 }
-.line .time:hover { border-color: #2a3140; }
+/* A time that collides with the line above: same moment, or earlier. */
+.line .time.bad {
+  color: #ff5c8a;
+  border-color: #ff5c8a;
+}
+.line .time:hover {
+  border-color: #2a3140;
+}
 
-.line .text { border-color: transparent; background: transparent; }
-.line .text:hover { border-color: #2a3140; }
+.line .text {
+  border-color: transparent;
+  background: transparent;
+}
+.line .text:hover {
+  border-color: #2a3140;
+}
 
-.line .tools { display: flex; gap: 4px; align-items: center; }
-
-/* --- beat grid --------------------------------------------------------- */
-.beats {
-  grid-column: 3 / 5;
+.line .tools {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
-  margin-top: 5px;
 }
-.bar { display: flex; gap: 2px; }
 
-.tick {
-  width: 40px;
-  height: 24px;
-  padding: 0;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-  color: #6b7686;
-  background: #161a22;
-  border: 1px solid #232836;
-  border-radius: 5px;
+/* --- backing track ----------------------------------------------------- */
+.ok {
+  color: #2fbfa8;
+  font-size: 12px;
 }
-/* The downbeat of each measure gets the heavier left edge, so measures read
-   as groups without needing separate bar lines. */
-.tick.downbeat { border-left: 2px solid #3a4456; }
-.tick.filled {
-  background: #17323a;
-  border-color: #2fbfa8;
-  color: #a9f0e4;
+.warn {
+  color: #ffd166;
+  font-size: 12px;
 }
-.tick.selected { border-color: #ffd166; color: #ffd166; }
 
-.line .bars {
-  font-family: ui-monospace, monospace;
+.mixer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #222836;
+}
+
+.mix-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 12px;
   color: #6b7686;
-  min-width: 12px;
-  text-align: center;
+  margin: 0;
 }
-
-.chord-editor {
-  grid-column: 3 / 5;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  margin-top: 6px;
-  padding: 6px 8px;
-  background: #161a22;
+/* A fixed label column keeps the controls left-aligned with each other. */
+.mix-row > span:first-child {
+  width: 84px;
+  flex: none;
+}
+.mix-row .num {
+  font-family: ui-monospace, monospace;
+  min-width: 38px;
+  text-align: right;
+}
+.mix-row input[type="range"] {
+  width: 100%;
+  max-width: 260px;
+  accent-color: #2fbfa8;
+}
+.mix-row input[type="checkbox"] {
+  accent-color: #2fbfa8;
+}
+.mix-row input.ms {
+  width: 76px;
+  font-family: ui-monospace, monospace;
+  text-align: right;
+  background: #1a1f29;
   border: 1px solid #2a3140;
   border-radius: 8px;
+  color: #e8edf5;
+  padding: 4px 6px;
+  font-size: 12px;
 }
-.chord-editor select { width: auto; padding: 4px 6px; font-size: 12px; }
+
+/* The native file input cannot be restyled, so it is hidden inside a label
+   that carries the button's look and its click target. */
+.pick {
+  display: inline-block;
+  background: #1a1f29;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+  padding: 8px 13px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pick.sm {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.pick.primary {
+  background: #2fbfa8;
+  border-color: #2fbfa8;
+  color: #08120f;
+  font-weight: 600;
+}
+.pick:hover:not(.off) {
+  border-color: #2fbfa8;
+}
+.pick.off {
+  opacity: 0.4;
+  cursor: default;
+}
+.pick input[type="file"] {
+  display: none;
+}
+
+/* --- steps ------------------------------------------------------------- */
+.steps {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  text-align: left;
+  padding: 10px 14px;
+  background: #12151c;
+  border: 1px solid #222836;
+}
+.step.current {
+  border-color: #2fbfa8;
+  background: #17323a;
+}
+.step-n {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid #2a3140;
+  font-size: 11px;
+  font-weight: 700;
+}
+.step.current .step-n {
+  border-color: #2fbfa8;
+  color: #2fbfa8;
+}
+.step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.step-text .muted {
+  font-size: 11px;
+}
+@media (max-width: 780px) {
+  .steps {
+    flex-direction: column;
+  }
+}
+
+/* --- preview stage ----------------------------------------------------- */
+.workshop-top {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(280px, 380px);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .workshop-top {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.stage-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.stage-empty {
+  padding: 20px;
+  text-align: center;
+}
+.stage-lyric {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 26px 22px 18px;
+  text-align: center;
+  /* A gradient rather than a bar, so a lyric over a bright photo stays
+     readable without boxing off the bottom of the picture. */
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.78));
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+/* Lines nobody has rewritten yet are still the original, and read as such. */
+.stage-lyric .untranslated {
+  opacity: 0.62;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* --- score: lyric left, that phrase's beats right ---------------------- */
+.score {
+  max-height: 460px;
+  /* One scroll box for both axes: vertical follows the song, horizontal
+     runs the beats. The lyric column below is sticky, so the words never
+     leave the screen when you scroll out along a long phrase. */
+  overflow: auto;
+  /* The follow and the playhead both measure with offsetTop/offsetLeft,
+     which need a positioned ancestor to be relative to. */
+  position: relative;
+  overscroll-behavior: contain;
+}
+
+.score-row {
+  display: flex;
+  align-items: stretch;
+  width: max-content;
+  min-width: 100%;
+  border-bottom: 1px solid #1a1f29;
+}
+.score-row.over {
+  background: #14262b;
+}
+
+.score-lyric {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 390px;
+  box-sizing: border-box;
+  padding: 8px 12px 8px 2px;
+  background: #12151c;
+  border-right: 1px solid #222836;
+}
+.score-row.active .score-lyric {
+  background: #17323a;
+}
+
+.sl-time {
+  flex: none;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  padding: 2px 3px;
+  background: transparent;
+  border-color: transparent;
+  color: #6b7686;
+}
+.score-row.active .sl-time {
+  color: #a9f0e4;
+}
+
+.sl-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* The line the piece will show, and under it the words it was written
+   against. Size carries the distinction, so the eye goes to the rewrite. */
+.sl-big {
+  font-size: 15px;
+  line-height: 1.25;
+  color: #e8edf5;
+  cursor: text;
+}
+/* Nothing rewritten here yet: still the original, and it should read as a
+   placeholder rather than as finished work. */
+.sl-big.original {
+  color: #9aa6b8;
+}
+.sl-big.label {
+  font-size: 12px;
+  font-style: italic;
+  color: #6b7686;
+  cursor: default;
+}
+input.sl-big {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1px 4px;
+  background: #1a1f29;
+  border: 1px solid #2fbfa8;
+  border-radius: 5px;
+}
+.sl-small {
+  font-size: 11px;
+  line-height: 1.3;
+  color: #6b7686;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Bars this row lasts, kept in the lyric column so that the beats column
+   can hold one width for every row. */
+.sl-bars {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+.sl-bars button {
+  padding: 1px 5px;
+  font-size: 11px;
+}
+.sl-count {
+  min-width: 20px;
+  padding: 1px 2px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  text-align: center;
+  color: #6b7686;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: default;
+}
+/* Set by hand, and so no longer following the timing. */
+.sl-count.set {
+  color: #2fbfa8;
+  border-color: #2a3140;
+  cursor: pointer;
+}
+
+.score-beats {
+  flex: none;
+  position: relative;
+  min-height: 54px;
+  background-color: #0f1218;
+  background-repeat: repeat;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sb-photos {
+  position: absolute;
+  inset: 2px 0 20px;
+}
+.sb-chords {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18px;
+}
+
+.sb-photo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  background: #1a1f29;
+  border: 1px solid #2a3140;
+  cursor: grab;
+  touch-action: none;
+}
+/* A photo running through several phrases is one block drawn in pieces, so
+   only the ends get a rounded edge — the joins stay square and read as a
+   continuation onto the next row. */
+.sb-photo.first {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+.sb-photo.last {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+.sb-photo:not(.first) {
+  border-left-style: dashed;
+}
+.sb-photo:not(.last) {
+  border-right-style: dashed;
+}
+.sb-photo.selected {
+  border-color: #ffd166;
+  z-index: 1;
+}
+.sb-photo:active {
+  cursor: grabbing;
+}
+.sb-photo img {
+  height: 100%;
+  width: auto;
+  object-fit: cover;
+  flex: none;
+  pointer-events: none;
+}
+.sb-name {
+  font-size: 11px;
+  color: #9aa6b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 6px;
+  pointer-events: none;
+}
+.sb-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  cursor: ew-resize;
+  background: linear-gradient(to right, transparent, #2fbfa8);
+  opacity: 0.4;
+  touch-action: none;
+}
+.sb-handle:hover {
+  opacity: 1;
+}
+
+.sb-chord {
+  position: absolute;
+  top: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #a9f0e4;
+  border-left: 1px solid #2fbfa8;
+  padding-left: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.score-playhead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #ff5c8a;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 3;
+}

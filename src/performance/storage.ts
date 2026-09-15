@@ -27,6 +27,48 @@ export function save(performance: Performance): void {
   localStorage.setItem(INDEX_KEY, JSON.stringify(index));
 }
 
+export interface SavedSummary {
+  id: string;
+  title: string;
+  artist: string;
+  /** ISO of the last save here; empty when the document will not parse. */
+  updatedAt: string;
+  /** False when the index names a document this browser cannot read back. */
+  readable: boolean;
+}
+
+/**
+ * Every performance saved in this browser, newest first.
+ *
+ * Read from the documents themselves rather than from the index, which holds
+ * only a title: the list that shows these has to say whether the copy here is
+ * ahead of what was published, and only the document carries the timestamp
+ * that answers that. A handful of songs makes the cost irrelevant, and it
+ * also turns up an entry the index names but the store cannot read.
+ */
+export function listSaved(): SavedSummary[] {
+  const summaries = listPerformances().map((entry): SavedSummary => {
+    const doc = load(entry.id);
+    if (!doc) {
+      return {
+        id: entry.id,
+        title: entry.title,
+        artist: "",
+        updatedAt: "",
+        readable: false,
+      };
+    }
+    return {
+      id: doc.id,
+      title: doc.title || entry.title,
+      artist: doc.artist,
+      updatedAt: doc.updatedAt,
+      readable: true,
+    };
+  });
+  return summaries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
 export function load(id: string): Performance | null {
   const raw = localStorage.getItem(KEY_PREFIX + id);
   if (!raw) return null;
