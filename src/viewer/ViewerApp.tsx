@@ -17,6 +17,9 @@ import { StageSlot, useStageWindow } from "../stage/StageWindow";
 import { Transport } from "../stage/Transport";
 import { siblingLink, usePerformanceDoc } from "./usePerformanceDoc";
 
+/** How long a hand scroll keeps the follow from taking the view back. */
+const HOLD_MS = 4000;
+
 /**
  * The published performance: the piece, and nothing of what made it.
  *
@@ -194,24 +197,45 @@ function LyricPanel({
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const rows = useRef(new Map<string, HTMLDivElement>());
+  const heldUntil = useRef(0);
 
   // The line being sung scrolls itself into view, but only while the panel is
   // open: a closed panel has no layout to scroll, and would jump the moment
   // it was opened.
   useEffect(() => {
-    if (!open) return;
+    if (!open || activeIndex < 0) return;
     const container = box.current;
-    const line = lines[activeIndex];
-    const row = line ? rows.current.get(line.id) : null;
-    if (!container || !row) return;
-    const middle =
-      row.offsetTop - container.clientHeight / 2 + row.offsetHeight / 2;
+    if (!container) return;
+    if (Date.now() < heldUntil.current) return;
+
+    // The same placing as the score and the line list: the phrase being sung
+    // sits second, with the one before it at the top — a line of context
+    // behind, the rest of the song ahead.
+    const anchor = lines[Math.max(0, activeIndex - 1)];
+    const row = anchor ? rows.current.get(anchor.id) : null;
+    if (!row) return;
+
+    // Measured with rects rather than offsetTop: this panel is not a
+    // positioned ancestor of its rows, so offsetTop would be counted from
+    // somewhere up the page and send the scroll to the end of the list.
+    const offset =
+      row.getBoundingClientRect().top - container.getBoundingClientRect().top;
     const limit = container.scrollHeight - container.clientHeight;
+    const top = Math.max(0, Math.min(limit, container.scrollTop + offset));
+    const distance = Math.abs(top - container.scrollTop);
+    if (distance < 1) return;
     container.scrollTo({
-      top: Math.max(0, Math.min(limit, middle)),
-      behavior: "smooth",
+      top,
+      // A seek can move the cursor by a whole song, and gliding that far
+      // takes longer than the gap between two lines.
+      behavior: distance > container.clientHeight ? "auto" : "smooth",
     });
   }, [open, activeIndex]);
+
+  /** A hand scroll keeps the follow from taking the view back for a while. */
+  function hold() {
+    heldUntil.current = Date.now() + HOLD_MS;
+  }
 
   return (
     <details
@@ -230,7 +254,7 @@ function LyricPanel({
         </a>
       </summary>
 
-      <div class="lines" ref={box}>
+      <div class="lines" ref={box} onWheel={hold} onPointerDown={hold}>
         {lines.map((line, i) => (
           <div
             key={line.id}
