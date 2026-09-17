@@ -4,7 +4,7 @@
  * path the backing track takes.
  */
 import { hashBytes } from "../persistence";
-import { newId, type TimelineImage } from "./types";
+import { DEFAULT_IMAGE_FIT, newId, type TimelineImage } from "./types";
 
 export const IMAGE_ACCEPT = "image/*";
 
@@ -19,7 +19,7 @@ const MEASURE_TIMEOUT_MS = 15_000;
 export interface PreparedImage {
   blob: Blob;
   /** Everything but the placement, which the drop position supplies. */
-  fields: Omit<TimelineImage, "id" | "beat" | "beats">;
+  fields: Omit<TimelineImage, "id" | "beat" | "beats" | "fit">;
 }
 
 export async function prepareImage(file: File): Promise<PreparedImage> {
@@ -63,6 +63,7 @@ export function placeImage(
     id: newId("img"),
     beat: Math.max(0, Math.round(beat)),
     beats: Math.max(1, Math.round(beats)),
+    fit: DEFAULT_IMAGE_FIT,
   };
 }
 

@@ -475,14 +475,26 @@ details.fold[open] > summary {
   place-items: center;
 }
 .stage-photo {
+  /* Pinned to the frame rather than centred as a grid item: a grid row sized
+     by its content resolves `height: 100%` as `auto`, which gave the photo a
+     box of its own aspect ratio — the frame then just clipped it and
+     object-fit below had nothing left to decide. */
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+  /* The whole photo, letterboxed — the default, since filling the frame
+     would quietly cut the edges off a picture that was chosen whole. */
   object-fit: contain;
   display: block;
 }
-.stage-empty {
-  padding: 20px;
-  text-align: center;
+.stage-photo.crop {
+  object-fit: cover;
+}
+/* Where the picture was, while it is playing in the other window: the page
+   keeps its shape, so nothing below it jumps when the window opens. */
+.stage-away {
+  border: 1px dashed #2a3140;
 }
 .stage-lyric {
   position: absolute;
@@ -504,6 +516,27 @@ details.fold[open] > summary {
   opacity: 0.62;
   font-weight: 500;
   font-style: italic;
+}
+
+/* The selected photo's controls, under the grid card and beside the stage.
+   Bordered in the same amber as the selected segment in the score, which is
+   what ties the panel to the photo it is about. */
+.photo-panel {
+  border-color: #ffd166;
+}
+.pp-name {
+  margin: 8px 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  /* Filenames off a camera are long and the column is narrow. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.photo-panel .pp-close {
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 8px 4px;
 }
 
 /* --- score: lyric left, that phrase's beats right ---------------------- */

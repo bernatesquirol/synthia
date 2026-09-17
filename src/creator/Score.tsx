@@ -24,6 +24,13 @@ interface Props {
   /** Upload and place; the score does not talk to storage itself. */
   onAddImages: (files: File[], beat: number) => void;
   busy: string;
+  /**
+   * The selected photo's id, owned by the caller: its controls live beside
+   * the stage, so the score only lights the segment and says what was
+   * grabbed.
+   */
+  selected: string | null;
+  onSelect: (id: string | null) => void;
 }
 
 type DragMode = "move" | "resize";
@@ -72,6 +79,8 @@ export function Score({
   activeLineId,
   onAddImages,
   busy,
+  selected,
+  onSelect,
 }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const playhead = useRef<HTMLDivElement>(null);
@@ -81,7 +90,6 @@ export function Score({
   const heldUntil = useRef(0);
 
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-  const [selected, setSelected] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [overRow, setOverRow] = useState<string | null>(null);
 
@@ -94,7 +102,6 @@ export function Score({
     () => phrases(performance, duration),
     [performance, duration],
   );
-  const chosen = performance.images.find((i) => i.id === selected) ?? null;
   const activeRow = rows.findIndex((r) => r.line?.id === activeLineId);
 
   // `rows` is rebuilt on every edit, so effects that only *read* it reach it
@@ -261,7 +268,7 @@ export function Score({
       mode,
       grab: at === null ? 0 : at - image.beat,
     };
-    setSelected(image.id);
+    onSelect(image.id);
     hold();
   }
 
@@ -399,56 +406,6 @@ export function Score({
         ))}
         <div class="score-playhead" ref={playhead} />
       </div>
-
-      {chosen && (
-        <div class="row" style="margin-top:10px">
-          <span class="muted grow">
-            <strong>{chosen.filename}</strong> · beat {chosen.beat} ·{" "}
-            {formatTime(beatTime(tempo, chosen.beat))}
-          </span>
-          <button
-            class="sm"
-            title="One beat shorter"
-            disabled={chosen.beats <= 1}
-            onClick={() => patch(chosen.id, { beats: chosen.beats - 1 })}
-          >
-            −
-          </button>
-          <span class="muted num">{chosen.beats} beats</span>
-          <button
-            class="sm"
-            title="One beat longer"
-            onClick={() => patch(chosen.id, { beats: chosen.beats + 1 })}
-          >
-            +
-          </button>
-          <button
-            class="sm"
-            title="Start this photo at the playhead"
-            onClick={() =>
-              patch(chosen.id, {
-                beat: Math.max(0, Math.floor(beatAt(tempo, getTime()))),
-              })
-            }
-          >
-            To playhead
-          </button>
-          <button
-            class="sm danger"
-            onClick={() => {
-              // The object stays in the bucket, as backing tracks do: it is
-              // content-addressed and older versions still point at it.
-              update((p) => ({
-                ...p,
-                images: p.images.filter((i) => i.id !== chosen.id),
-              }));
-              setSelected(null);
-            }}
-          >
-            Remove
-          </button>
-        </div>
-      )}
     </div>
   );
 }

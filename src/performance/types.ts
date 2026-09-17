@@ -20,7 +20,7 @@
  * *continuous* beat grid that runs the length of the piece, unlike chords,
  * which stay pinned to the phrase they belong to.
  */
-export const PERFORMANCE_VERSION = 4;
+export const PERFORMANCE_VERSION = 5;
 
 export interface Tempo {
   bpm: number;
@@ -119,6 +119,18 @@ export interface BackingTrack {
  * rather than seconds so that changing the tempo re-times the whole slideshow
  * with the music instead of leaving it behind.
  */
+/**
+ * How a photo meets the frame, which is 16:9 while photos are any shape.
+ *
+ * "fit" shows the whole picture and lets the frame show through beside it;
+ * "crop" fills the frame and loses the edges. Fitting is the default because
+ * it cannot silently throw away part of a photo you chose — a crop is worth
+ * asking for, never worth assuming.
+ */
+export type ImageFit = "fit" | "crop";
+
+export const DEFAULT_IMAGE_FIT: ImageFit = "fit";
+
 export interface TimelineImage {
   id: string;
   /** Object name under the performance's prefix, e.g. "images/9f3c….jpg". */
@@ -133,6 +145,8 @@ export interface TimelineImage {
   beat: number;
   /** How many beats it stays on screen. At least 1. */
   beats: number;
+  /** Whole picture letterboxed, or the frame filled and the edges lost. */
+  fit: ImageFit;
 }
 
 export const MAX_BACKING_BYTES = 60 * 1024 * 1024;
@@ -591,6 +605,8 @@ function parseImages(raw: unknown): TimelineImage[] {
       height: positive(i.height, 0),
       beat: Math.max(0, Math.round(positive(i.beat, 0))),
       beats: Math.max(1, Math.round(positive(i.beats, 1))),
+      // Absent before version 5, when every photo was fitted.
+      fit: i.fit === "crop" ? "crop" : DEFAULT_IMAGE_FIT,
     });
   }
   return out;

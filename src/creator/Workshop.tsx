@@ -25,7 +25,9 @@ import {
   type TempoGuess,
 } from "../performance/tempofit";
 import { beginUpload } from "../performance/uploads";
+import { PhotoPanel } from "./PhotoPanel";
 import { PreviewStage } from "./PreviewStage";
+import { STAGE_WINDOW, StageWindow } from "./StageWindow";
 import { Score } from "./Score";
 
 interface Props {
@@ -52,6 +54,14 @@ export function Workshop({ performance, update, remote }: Props) {
   const nowRef = useRef(0);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  /**
+   * The photo whose controls are open, held here rather than in the score:
+   * the panel belongs beside the stage, where its framing can be judged
+   * against the picture it will appear in.
+   */
+  const [selected, setSelected] = useState<string | null>(null);
+  /** The window the picture is playing in, or null while it is on the page. */
+  const [stageWin, setStageWin] = useState<Window | null>(null);
 
   // Stable: the timeline keys an animation-frame loop on this, and an inline
   // arrow would tear that loop down and rebuild it on every clock tick.
@@ -81,7 +91,8 @@ export function Workshop({ performance, update, remote }: Props) {
     return () => cancelAnimationFrame(raf);
   }, [clock.time]);
 
-  // Space plays and pauses, except while typing a lyric.
+  // Space plays and pauses, except while typing a lyric. Escape closes the
+  // photo panel, which is the same thing as dropping the selection.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const el = e.target as HTMLElement | null;
@@ -89,6 +100,8 @@ export function Workshop({ performance, update, remote }: Props) {
       if (e.key === " ") {
         e.preventDefault();
         clock.toggle();
+      } else if (e.key === "Escape") {
+        setSelected(null);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -131,18 +144,60 @@ export function Workshop({ performance, update, remote }: Props) {
     }
   }
 
+  /**
+   * Opened here rather than inside the window component: a `window.open`
+   * that does not run inside the click has lost the user gesture, and the
+   * popup blocker refuses it.
+   */
+  function popOut() {
+    if (stageWin) {
+      setStageWin(null);
+      return;
+    }
+    setError("");
+    const opened = window.open("", STAGE_WINDOW.name, STAGE_WINDOW.features);
+    if (!opened) {
+      setError(
+        "The browser blocked the stage window. Allow pop-ups for this page " +
+          "and try again.",
+      );
+      return;
+    }
+    setStageWin(opened);
+  }
+
   const activeIndex = lineIndexAt(lines, now);
+  const chosen = performance.images.find((i) => i.id === selected) ?? null;
+
+  // One stage, shown either on this page or in the other window. Building the
+  // vnode here rather than twice is what keeps the two from drifting apart.
+  const stage = (
+    <PreviewStage
+      performance={performance}
+      time={now}
+      urls={urls}
+      lines={lines}
+    />
+  );
 
   return (
     <>
       <div class="workshop-top">
         <div>
-          <PreviewStage
-            performance={performance}
-            time={now}
-            urls={urls}
-            lines={lines}
-          />
+          {stageWin ? (
+            <div class="stage stage-away">
+              <span class="muted">
+                Playing in the stage window. The controls stay here.
+              </span>
+            </div>
+          ) : (
+            stage
+          )}
+          {stageWin && (
+            <StageWindow win={stageWin} onClose={() => setStageWin(null)}>
+              {stage}
+            </StageWindow>
+          )}
           <div class="row" style="margin-top:10px">
             <button class="primary" onClick={clock.toggle}>
               {clock.playing ? "Pause" : "Play"}
@@ -152,6 +207,17 @@ export function Workshop({ performance, update, remote }: Props) {
             <button onClick={() => clock.seek(0)}>⏮</button>
             <span class="clock">{formatTime(now)}</span>
             <span class="muted">of {formatTime(clock.duration)}</span>
+            <span class="grow" />
+            <button
+              title={
+                stageWin
+                  ? "Close the stage window and show the picture here again"
+                  : "Show the picture in its own window — for a second screen"
+              }
+              onClick={popOut}
+            >
+              {stageWin ? "Bring it back" : "Pop out ⧉"}
+            </button>
           </div>
           {clock.status === "loading" && (
             <p class="muted">Loading the backing track…</p>
@@ -165,12 +231,26 @@ export function Workshop({ performance, update, remote }: Props) {
           )}
         </div>
 
-        <GridPanel
-          performance={performance}
-          update={update}
-          getNow={getTime}
-          remote={remote}
-        />
+        <div>
+          <GridPanel
+            performance={performance}
+            update={update}
+            getNow={getTime}
+            remote={remote}
+          />
+          {chosen && (
+            <PhotoPanel
+              image={chosen}
+              performance={performance}
+              update={update}
+              getNow={getTime}
+              onShow={() =>
+                clock.seek(beatTime(performance.tempo, chosen.beat))
+              }
+              onClose={() => setSelected(null)}
+            />
+          )}
+        </div>
       </div>
 
       <Score
@@ -183,6 +263,8 @@ export function Workshop({ performance, update, remote }: Props) {
         activeLineId={lines[activeIndex]?.id ?? null}
         onAddImages={addImages}
         busy={busy}
+        selected={selected}
+        onSelect={setSelected}
       />
 
       {error && <p class="error">{error}</p>}

@@ -21,10 +21,16 @@ interface Props {
  * What the finished piece looks like at one moment: the photo covering this
  * beat, with the rewritten lyric across it.
  *
- * A beat with no photo shows black rather than holding the last one. Photos
- * carry an explicit length in beats, and quietly extending one past the
- * length you gave it would make that number a lie — better that a gap is
- * visible here, where you can fix it, than at performance time.
+ * A photo keeps whatever shape it was taken in, so by default the whole of
+ * it is shown and the black frame fills whatever is left over; a photo asked
+ * to crop fills the frame instead and loses its edges.
+ *
+ * A beat with no photo shows black rather than holding the last one, and
+ * nothing but black: the lyric still sings over it, but no notice about the
+ * gap, because this frame is the piece and not a report on it. Photos carry
+ * an explicit length in beats, and quietly extending one past the length you
+ * gave it would make that number a lie; better that a gap reads as a gap
+ * here, where you can fix it, than at performance time.
  */
 export function PreviewStage({ performance, time, urls, lines }: Props) {
   const beat = Math.floor(beatAt(performance.tempo, time));
@@ -37,20 +43,12 @@ export function PreviewStage({ performance, time, urls, lines }: Props) {
 
   return (
     <div class="stage">
-      {url ? (
-        <img class="stage-photo" src={url} alt={image?.filename ?? ""} />
-      ) : (
-        <div class="stage-empty">
-          {image ? (
-            <span class="muted">Loading {image.filename}…</span>
-          ) : performance.images.length === 0 ? (
-            <span class="muted">
-              Drop photos onto the beats below to build the picture.
-            </span>
-          ) : (
-            <span class="muted">No photo on beat {Math.max(0, beat)}</span>
-          )}
-        </div>
+      {url && (
+        <img
+          class={"stage-photo" + (image?.fit === "crop" ? " crop" : "")}
+          src={url}
+          alt={image?.filename ?? ""}
+        />
       )}
       {lyric && (
         <div class="stage-lyric">
