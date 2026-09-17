@@ -539,6 +539,66 @@ details.fold[open] > summary {
   padding: 2px 8px 4px;
 }
 
+/* --- published views --------------------------------------------------- */
+
+/* The performance page is the picture first: the frame gets the width, and
+   what little else there is sits under it. */
+.watch {
+  max-width: 1100px;
+  margin-bottom: 16px;
+}
+
+/* The lyric sheet: one column of words, sized to be read at arm's length off
+   a phone held in one hand. No clock, so nothing here moves. */
+.sheet {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 22px 20px 64px;
+  color: #e8edf5;
+}
+.sheet h1 {
+  font-size: 22px;
+  margin: 0;
+}
+.sheet-artist {
+  margin: 4px 0 22px;
+  color: #6b7686;
+  font-size: 14px;
+}
+.sheet-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sheet-lines li {
+  /* Loose enough that a thumb-width of screen holds a couple of lines and the
+     eye can come back to the right one. */
+  padding: 9px 0;
+  border-bottom: 1px solid #171c25;
+}
+.sheet-line {
+  display: block;
+  font-size: 19px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+/* A line nobody rewrote is still the original, and reads as such. */
+.sheet-line.original {
+  font-weight: 500;
+  font-style: italic;
+  opacity: 0.62;
+}
+.sheet-source {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: #6b7686;
+}
+.sheet-foot {
+  margin-top: 26px;
+  font-size: 13px;
+}
+
 /* --- score: lyric left, that phrase's beats right ---------------------- */
 .score {
   max-height: 460px;

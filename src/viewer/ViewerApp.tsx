@@ -1,259 +1,257 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { loadConfig } from "../config";
-import { readVersionFromUrl } from "../persistence";
 import { link } from "../router";
+import { useAssetUrls } from "../performance/assets";
+import { useWorkshopClock } from "../performance/clock";
 import { RemoteStore } from "../performance/remote";
-import * as storage from "../performance/storage";
-import { useBackingTrack } from "../performance/useBackingTrack";
-import { chordSymbol } from "../music/chords";
 import {
-  chordAt,
-  chordTimeline,
   displayText,
   formatTime,
   lineIndexAt,
+  sortedLines,
   type Performance,
+  type PerformanceLine,
 } from "../performance/types";
-import {
-  createPlayer,
-  PLAYER_STATE,
-  type YouTubePlayer,
-} from "../performance/youtube";
+import { PreviewStage } from "../stage/PreviewStage";
+import { StageSlot, useStageWindow } from "../stage/StageWindow";
+import { Transport } from "../stage/Transport";
+import { siblingLink, usePerformanceDoc } from "./usePerformanceDoc";
 
 /**
- * Placeholder performance screen. It proves the authored document round-trips
- * — player, synced lyrics and the chord timeline — and is the shell the real
- * playing surface will go into.
+ * The published performance: the piece, and nothing of what made it.
+ *
+ * A visitor gets the picture and the words over it, on the backing track's
+ * clock — no video, no score, no chords. The lyrics are here too, but folded
+ * away: they are for following along or reading afterwards, and whoever wants
+ * them can ask for them.
  */
 export function ViewerApp() {
-  const id = new URLSearchParams(window.location.search).get("id");
-  const version = readVersionFromUrl();
+  const doc = usePerformanceDoc();
 
-  // Anything already in this browser wins, so authoring keeps working offline
-  // and without a configured endpoint. A ?v= pin always goes to the store,
-  // since localStorage only ever holds the working copy.
-  const [performance, setPerformance] = useState<Performance | null>(() =>
-    version ? null : id ? storage.load(id) : storage.loadLatest(),
-  );
-  const [status, setStatus] = useState(performance ? "" : "loading");
-
-  useEffect(() => {
-    if (performance || !id) {
-      if (!performance) setStatus("missing");
-      return;
-    }
-    let cancelled = false;
-    const remote = new RemoteStore(loadConfig());
-    if (!remote.enabled) {
-      setStatus("missing");
-      return;
-    }
-    remote
-      .fetch(id, version ?? undefined)
-      .then((doc) => {
-        if (cancelled) return;
-        if (doc) setPerformance(doc);
-        else setStatus("missing");
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.warn("[viewer] remote fetch failed", err);
-        setStatus(err instanceof Error ? err.message : String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-    // Resolving once on mount is intended; the id comes from the URL.
-  }, []);
-
-  if (!performance) {
+  if (doc.phase !== "ready") {
     return (
       <div class="screen">
         <Header />
         <div class="card">
-          {status === "loading" ? (
+          {doc.phase === "loading" ? (
             <p class="muted">Loading…</p>
-          ) : status === "missing" ? (
+          ) : doc.phase === "missing" ? (
             <p class="muted">
               No performance found. Build one in the{" "}
               <a href={link("/performance_creator")}>creator</a> first.
             </p>
           ) : (
-            <p class="error">{status}</p>
+            <p class="error">{doc.message}</p>
           )}
         </div>
       </div>
     );
   }
-  return <Stage performance={performance} />;
+  return <Performing performance={doc.performance} />;
 }
 
-function Header() {
+function Header({ performance }: { performance?: Performance }) {
+  const title = performance?.title || "PERFORMANCE";
   return (
     <header class="topbar">
-      <h1>PERFORMANCE</h1>
+      <h1>{title.toUpperCase()}</h1>
       <nav>
-        <a href={link("/")}>Instrument</a>
+        {performance && (
+          <a href={link(siblingLink("/lyrics"))} target="_blank" rel="noopener">
+            Lyric sheet
+          </a>
+        )}
         <a href={link("/performance_creator")}>Creator</a>
       </nav>
     </header>
   );
 }
 
-function Stage({ performance }: { performance: Performance }) {
-  const holder = useRef<HTMLDivElement>(null);
-  const player = useRef<YouTubePlayer | null>(null);
-  const [now, setNow] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [ready, setReady] = useState(false);
-
+function Performing({ performance }: { performance: Performance }) {
   const remote = useMemo(() => new RemoteStore(loadConfig()), []);
-  const backing = useBackingTrack(
+  const clock = useWorkshopClock(
     performance.id,
     performance.backingTrack,
+    performance.duration,
     remote,
   );
-  // Reached through a ref because the clock tick is built once, before the
-  // audio has loaded.
-  const followBacking = useRef(backing.follow);
-  followBacking.current = backing.follow;
 
-  const lines = useMemo(
-    () => [...performance.lines].sort((a, b) => a.time - b.time),
-    [performance],
+  const [now, setNow] = useState(0);
+  /** Live clock, for handlers that must not go stale between renders. */
+  const nowRef = useRef(0);
+  const popout = useStageWindow();
+
+  const lines = useMemo(() => sortedLines(performance), [performance.lines]);
+  const assets = useMemo(
+    () => performance.images.map((i) => ({ key: i.key, mimeType: i.mimeType })),
+    [performance.images],
   );
-  const chords = useMemo(() => chordTimeline(performance), [performance]);
+  const urls = useAssetUrls(performance.id, assets, remote);
 
+  // One poll for the screen, as in the workshop: the picture and the lyric
+  // follow only need to be right to a tenth of a second.
   useEffect(() => {
-    const host = holder.current;
-    if (!host) return;
-    let cancelled = false;
     let raf = 0;
     let last = 0;
-
-    const slot = document.createElement("div");
-    host.appendChild(slot);
-
-    createPlayer(slot, performance.youtubeId, {
-      onStateChange: (s) => setPlaying(s === PLAYER_STATE.playing),
-    }).then((p) => {
-      if (cancelled) {
-        p.destroy();
-        return;
+    const tick = (ts: number) => {
+      nowRef.current = clock.time();
+      if (ts - last > 100) {
+        last = ts;
+        setNow(nowRef.current);
       }
-      player.current = p;
-      setReady(true);
-      const tick = (ts: number) => {
-        const time = p.getCurrentTime();
-        // Every frame: the backing track is corrected against this clock, so
-        // throttling it here would coarsen the sync.
-        followBacking.current(
-          time,
-          p.getPlayerState() === PLAYER_STATE.playing,
-        );
-        if (ts - last > 80) {
-          last = ts;
-          setNow(time);
-        }
-        raf = requestAnimationFrame(tick);
-      };
       raf = requestAnimationFrame(tick);
-    });
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-      player.current?.destroy();
-      player.current = null;
-      setReady(false);
-      host.replaceChildren();
     };
-  }, [performance.youtubeId]);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [clock.time]);
 
-  // Silence the video only once the track is actually playable, so a backing
-  // track that fails to load leaves the original audio rather than silence.
-  const muteVideo = performance.backingTrack?.muteVideo ?? false;
+  // Space plays and pauses: the one control worth having without aiming.
   useEffect(() => {
-    const p = player.current;
-    if (!p || !ready) return;
-    if (muteVideo && backing.status === "ready") p.mute();
-    else p.unMute();
-  }, [ready, muteVideo, backing.status]);
+    function onKey(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      if (e.key === " ") {
+        e.preventDefault();
+        clock.toggle();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   const activeIndex = lineIndexAt(lines, now);
-  const chord = chordAt(chords, now);
+  const stage = (
+    <PreviewStage
+      performance={performance}
+      time={now}
+      urls={urls}
+      lines={lines}
+    />
+  );
 
   return (
     <div class="screen">
-      <Header />
+      <Header performance={performance} />
 
-      <div class="editor-top">
-        <div>
-          <div class="player-holder" ref={holder} />
-          <div class="row" style="margin-top:10px">
-            <button
-              class="primary"
-              onClick={() => {
-                const p = player.current;
-                if (!p) return;
-                if (playing) p.pauseVideo();
-                else p.playVideo();
-              }}
-            >
-              {playing ? "Pause" : "Play"}
-            </button>
-            <span class="clock">{formatTime(now)}</span>
-          </div>
-          {performance.backingTrack && (
-            <p
-              class={backing.status === "error" ? "error" : "muted"}
-              style="margin-bottom:0"
-            >
-              {backing.status === "loading"
-                ? "Loading the backing track…"
-                : backing.status === "error"
-                  ? backing.error
-                  : `Backing track: ${performance.backingTrack.filename}`}
-            </p>
-          )}
-        </div>
-
-        <div class="card">
-          <h2>Chord now</h2>
-          <p style="font-size:38px;font-weight:700;margin:0">
-            {chord ? chordSymbol(chord.root, chord.quality) : "—"}
+      <div class="watch">
+        <StageSlot win={popout.win} onClose={popout.toggle}>
+          {stage}
+        </StageSlot>
+        <Transport
+          playing={clock.playing}
+          time={now}
+          duration={clock.duration}
+          onToggle={clock.toggle}
+          onSeek={clock.seek}
+          popped={popout.open}
+          onPopOut={popout.toggle}
+        />
+        {popout.blocked && (
+          <p class="warn">
+            The browser blocked the stage window. Allow pop-ups for this page
+            and try again.
           </p>
-          <p class="muted">
-            {chords.length} chord changes across {lines.length} lines
+        )}
+        {clock.status === "loading" && (
+          <p class="muted">Loading the backing track…</p>
+        )}
+        {clock.status === "error" && <p class="error">{clock.error}</p>}
+        {clock.status === "ready" && clock.source === "silent" && (
+          <p class="warn">
+            This version has no backing track, so it plays silently.
           </p>
-        </div>
+        )}
       </div>
 
-      <div class="card">
-        <h2>
-          {performance.title || "Untitled"}
-          {performance.artist ? ` · ${performance.artist}` : ""}
-        </h2>
-        <div class="lines">
-          {lines.map((line, i) => (
-            <div
-              key={line.id}
-              class={"line" + (i === activeIndex ? " active" : "")}
-            >
-              <span class="time">{formatTime(line.time)}</span>
-              <span />
-              <span class="grow">{displayText(line)}</span>
-              <span class="muted">
-                {line.chords
-                  .slice()
-                  .sort((a, b) => a.beat - b.beat)
-                  .map((c) => chordSymbol(c.root, c.quality))
-                  .join(" ")}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <LyricPanel
+        performance={performance}
+        lines={lines}
+        activeIndex={activeIndex}
+        onSeek={clock.seek}
+      />
     </div>
+  );
+}
+
+/**
+ * The words, folded away until asked for.
+ *
+ * Open, it follows the singing and any line can be jumped to, which makes it
+ * a way around the piece as much as something to read. Closed, it gets out of
+ * the way of the picture, which is the point of the page.
+ */
+function LyricPanel({
+  performance,
+  lines,
+  activeIndex,
+  onSeek,
+}: {
+  performance: Performance;
+  lines: PerformanceLine[];
+  activeIndex: number;
+  onSeek: (seconds: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const rows = useRef(new Map<string, HTMLDivElement>());
+
+  // The line being sung scrolls itself into view, but only while the panel is
+  // open: a closed panel has no layout to scroll, and would jump the moment
+  // it was opened.
+  useEffect(() => {
+    if (!open) return;
+    const container = box.current;
+    const line = lines[activeIndex];
+    const row = line ? rows.current.get(line.id) : null;
+    if (!container || !row) return;
+    const middle =
+      row.offsetTop - container.clientHeight / 2 + row.offsetHeight / 2;
+    const limit = container.scrollHeight - container.clientHeight;
+    container.scrollTo({
+      top: Math.max(0, Math.min(limit, middle)),
+      behavior: "smooth",
+    });
+  }, [open, activeIndex]);
+
+  return (
+    <details
+      class="card fold"
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary>
+        <h2>Lyrics</h2>
+        <span class="muted grow">
+          {lines.length} lines
+          {performance.artist ? ` · ${performance.artist}` : ""}
+        </span>
+        <a href={link(siblingLink("/lyrics"))} target="_blank" rel="noopener">
+          open the sheet
+        </a>
+      </summary>
+
+      <div class="lines" ref={box}>
+        {lines.map((line, i) => (
+          <div
+            key={line.id}
+            class={"line" + (i === activeIndex ? " active" : "")}
+            ref={(el) => {
+              if (el) rows.current.set(line.id, el);
+              else rows.current.delete(line.id);
+            }}
+          >
+            <button
+              class="time"
+              title="Play from here"
+              onClick={() => onSeek(line.time)}
+            >
+              {formatTime(line.time)}
+            </button>
+            <span />
+            <span class="grow">{displayText(line)}</span>
+          </div>
+        ))}
+      </div>
+    </details>
   );
 }

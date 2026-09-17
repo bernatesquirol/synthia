@@ -85,6 +85,68 @@ export function StageWindow({ win, onClose, children }: Props) {
 }
 
 /**
+ * Opening and closing the stage window, as a screen's own switch.
+ *
+ * `toggle` has to be called straight from a click: a `window.open` that runs
+ * later — from an effect, or after an await — has lost the user gesture and
+ * the popup blocker refuses it, which is what `blocked` then says.
+ */
+export function useStageWindow(): {
+  win: Window | null;
+  open: boolean;
+  blocked: boolean;
+  toggle: () => void;
+} {
+  const [win, setWin] = useState<Window | null>(null);
+  const [blocked, setBlocked] = useState(false);
+
+  function toggle() {
+    setBlocked(false);
+    if (win) {
+      setWin(null);
+      return;
+    }
+    const opened = window.open("", STAGE_WINDOW.name, STAGE_WINDOW.features);
+    if (!opened) {
+      setBlocked(true);
+      return;
+    }
+    setWin(opened);
+  }
+
+  return { win, open: win !== null, blocked, toggle };
+}
+
+/**
+ * The stage, wherever it is playing: here, or in the window with a note left
+ * in its place. The note keeps the page's shape, so nothing below it jumps
+ * when the window opens.
+ */
+export function StageSlot({
+  win,
+  onClose,
+  children,
+}: {
+  win: Window | null;
+  onClose: () => void;
+  children: ComponentChildren;
+}) {
+  if (!win) return <>{children}</>;
+  return (
+    <>
+      <div class="stage stage-away">
+        <span class="muted">
+          Playing in the stage window. The controls stay here.
+        </span>
+      </div>
+      <StageWindow win={win} onClose={onClose}>
+        {children}
+      </StageWindow>
+    </>
+  );
+}
+
+/**
  * Whatever styles this document, however the bundler delivered it: a <link>
  * in the built app, injected <style> tags under the dev server. Cloned rather
  * than re-fetched, so the window needs no knowledge of either.

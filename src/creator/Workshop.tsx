@@ -26,8 +26,9 @@ import {
 } from "../performance/tempofit";
 import { beginUpload } from "../performance/uploads";
 import { PhotoPanel } from "./PhotoPanel";
-import { PreviewStage } from "./PreviewStage";
-import { STAGE_WINDOW, StageWindow } from "./StageWindow";
+import { PreviewStage } from "../stage/PreviewStage";
+import { StageSlot, useStageWindow } from "../stage/StageWindow";
+import { Transport } from "../stage/Transport";
 import { Score } from "./Score";
 
 interface Props {
@@ -60,8 +61,8 @@ export function Workshop({ performance, update, remote }: Props) {
    * against the picture it will appear in.
    */
   const [selected, setSelected] = useState<string | null>(null);
-  /** The window the picture is playing in, or null while it is on the page. */
-  const [stageWin, setStageWin] = useState<Window | null>(null);
+  /** Whether the picture is on this page or in its own window. */
+  const popout = useStageWindow();
 
   // Stable: the timeline keys an animation-frame loop on this, and an inline
   // arrow would tear that loop down and rebuild it on every clock tick.
@@ -144,28 +145,6 @@ export function Workshop({ performance, update, remote }: Props) {
     }
   }
 
-  /**
-   * Opened here rather than inside the window component: a `window.open`
-   * that does not run inside the click has lost the user gesture, and the
-   * popup blocker refuses it.
-   */
-  function popOut() {
-    if (stageWin) {
-      setStageWin(null);
-      return;
-    }
-    setError("");
-    const opened = window.open("", STAGE_WINDOW.name, STAGE_WINDOW.features);
-    if (!opened) {
-      setError(
-        "The browser blocked the stage window. Allow pop-ups for this page " +
-          "and try again.",
-      );
-      return;
-    }
-    setStageWin(opened);
-  }
-
   const activeIndex = lineIndexAt(lines, now);
   const chosen = performance.images.find((i) => i.id === selected) ?? null;
 
@@ -184,41 +163,24 @@ export function Workshop({ performance, update, remote }: Props) {
     <>
       <div class="workshop-top">
         <div>
-          {stageWin ? (
-            <div class="stage stage-away">
-              <span class="muted">
-                Playing in the stage window. The controls stay here.
-              </span>
-            </div>
-          ) : (
-            stage
+          <StageSlot win={popout.win} onClose={popout.toggle}>
+            {stage}
+          </StageSlot>
+          <Transport
+            playing={clock.playing}
+            time={now}
+            duration={clock.duration}
+            onToggle={clock.toggle}
+            onSeek={clock.seek}
+            popped={popout.open}
+            onPopOut={popout.toggle}
+          />
+          {popout.blocked && (
+            <p class="warn">
+              The browser blocked the stage window. Allow pop-ups for this page
+              and try again.
+            </p>
           )}
-          {stageWin && (
-            <StageWindow win={stageWin} onClose={() => setStageWin(null)}>
-              {stage}
-            </StageWindow>
-          )}
-          <div class="row" style="margin-top:10px">
-            <button class="primary" onClick={clock.toggle}>
-              {clock.playing ? "Pause" : "Play"}
-            </button>
-            <button onClick={() => clock.seek(nowRef.current - 5)}>−5s</button>
-            <button onClick={() => clock.seek(nowRef.current + 5)}>+5s</button>
-            <button onClick={() => clock.seek(0)}>⏮</button>
-            <span class="clock">{formatTime(now)}</span>
-            <span class="muted">of {formatTime(clock.duration)}</span>
-            <span class="grow" />
-            <button
-              title={
-                stageWin
-                  ? "Close the stage window and show the picture here again"
-                  : "Show the picture in its own window — for a second screen"
-              }
-              onClick={popOut}
-            >
-              {stageWin ? "Bring it back" : "Pop out ⧉"}
-            </button>
-          </div>
           {clock.status === "loading" && (
             <p class="muted">Loading the backing track…</p>
           )}
