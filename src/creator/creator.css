@@ -14,6 +14,10 @@
   align-items: center;
   gap: 14px;
   margin-bottom: 22px;
+  /* A long title and the nav links both claim the full row; on a phone
+     that's more than fits, so the nav drops to a line of its own rather
+     than clipping or forcing the page wider than the viewport. */
+  flex-wrap: wrap;
 }
 .topbar h1 {
   font-size: 15px;
@@ -27,6 +31,13 @@
   display: flex;
   gap: 12px;
   font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .screen {
+    /* The desktop gutters cost more of a phone's width than they're worth. */
+    padding: 14px 12px 60px;
+  }
 }
 
 .card {
@@ -127,6 +138,10 @@ details.fold > summary {
   gap: 10px;
   cursor: pointer;
   list-style: none;
+  /* The lyric panel's summary carries a heading, a line count and a link;
+     narrower than that together, the link drops to its own line rather
+     than pushing the card wider than the screen. */
+  flex-wrap: wrap;
 }
 details.fold > summary::-webkit-details-marker {
   display: none;
@@ -473,6 +488,11 @@ details.fold[open] > summary {
   overflow: hidden;
   display: grid;
   place-items: center;
+  /* Lets the lyric size itself off the frame's own width rather than the
+     viewport's: the same frame is narrow in the workshop's side column and
+     full width on a phone, and either way the lyric should fill it the same
+     proportion, not a fixed pixel size meant for the desktop watch page. */
+  container-type: inline-size;
 }
 .stage-photo {
   /* Pinned to the frame rather than centred as a grid item: a grid row sized
@@ -501,12 +521,15 @@ details.fold[open] > summary {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 26px 22px 18px;
+  padding: 6.5cqi 5.5cqi 4.5cqi;
   text-align: center;
   /* A gradient rather than a bar, so a lyric over a bright photo stays
      readable without boxing off the bottom of the picture. */
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.78));
-  font-size: 22px;
+  /* Scaled to the frame (see .stage's container-type) rather than fixed:
+     the ceiling matches what 22px used to be at desktop width, and it
+     shrinks with the frame instead of overflowing a phone held upright. */
+  font-size: clamp(14px, 4.2cqi, 22px);
   font-weight: 600;
   line-height: 1.25;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
@@ -546,6 +569,114 @@ details.fold[open] > summary {
 .watch {
   max-width: 1100px;
   margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  /* The transport is pressed with a thumb here, not clicked with a
+     pointer, so its buttons need more than the desktop's tap area. */
+  .watch .row button {
+    padding: 11px 14px;
+    font-size: 14px;
+  }
+  /* Same reasoning for the line list's own seek buttons underneath. */
+  .watch .line {
+    padding: 9px 8px;
+  }
+  .watch .line .time {
+    padding: 8px 4px;
+    font-size: 13px;
+  }
+}
+
+/* Turning the phone on its side is itself the request for a bigger
+   picture, so the stage takes the screen and the lyrics move from
+   underneath it to a sidebar that only costs width, not height. `pointer:
+   coarse` is what keeps this off a short desktop window, which is also
+   landscape but has no reason to behave like a phone. */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .screen {
+    padding: 0;
+    max-width: none;
+  }
+  .topbar {
+    display: none;
+  }
+
+  .performance-layout {
+    display: flex;
+    align-items: stretch;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .watch {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .watch .stage {
+    /* object-fit already letterboxes the photo inside whatever box it's
+       given — the fixed 16:9 box only mattered for sizing height off a
+       known width, which the flex column below does directly instead. */
+    aspect-ratio: auto;
+    flex: 1;
+    min-height: 0;
+    border-radius: 0;
+  }
+  .watch .row {
+    margin-top: 0;
+    flex: none;
+  }
+  /* ±5s is a scrubbing aid for editing, not for watching; dropping it here
+     is what keeps the rest of the transport on one line instead of
+     wrapping to a second, which is height this screen doesn't have. */
+  .watch .row .seek {
+    display: none;
+  }
+
+  /* Folded, the lyrics are a strip down the edge — vertical rather than a
+     wide horizontal card, since width is what the stage needs most here.
+     Opened, it turns back to a normal, horizontal sidebar. */
+  .performance-layout .fold {
+    flex: none;
+    width: 36px;
+    max-width: none;
+    margin-bottom: 0;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .performance-layout .fold:not([open]) > summary {
+    writing-mode: vertical-rl;
+    white-space: nowrap;
+    margin-bottom: 0;
+    padding: 10px 0;
+  }
+  /* The line count and the link out to the sheet are only worth the width
+     once the panel is already open; collapsed, they'd just make the strip
+     wider for no reason. */
+  .performance-layout .fold:not([open]) > summary .muted,
+  .performance-layout .fold:not([open]) > summary a {
+    display: none;
+  }
+  .performance-layout .fold[open] {
+    width: min(38vw, 280px);
+    display: flex;
+    flex-direction: column;
+  }
+  .performance-layout .fold[open] > summary {
+    flex: none;
+  }
+  .performance-layout .fold .lines {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
 }
 
 /* The lyric sheet: one column of words, sized to be read at arm's length off
